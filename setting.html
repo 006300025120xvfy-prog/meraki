@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>SETTING - DRAW RUN</title>
+  <style>
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      color: white;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    body {
+      flex-direction: column;
+      transform-origin: center center;
+    }
+
+    h1 {
+      font-size: 36px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin-bottom: 25px;
+      color: #fff;
+      text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
+    }
+
+    .setting-container {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 20px 30px;
+      width: 80%;
+      max-width: 350px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .setting-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .setting-label {
+      font-size: 14px;
+      font-weight: bold;
+      color: #b8c1ec;
+    }
+
+    .audio-toggle-btn {
+      padding: 10px;
+      font-size: 15px;
+      font-weight: bold;
+      color: white;
+      background: linear-gradient(45deg, #00dbde, #fc00ff);
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      box-shadow: 0 4px 15px rgba(0, 219, 222, 0.4);
+      transition: transform 0.1s, filter 0.2s;
+    }
+
+    .audio-toggle-btn:hover { filter: brightness(1.15); }
+    .audio-toggle-btn:active { transform: scale(0.97); }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: #ff007f;
+      cursor: pointer;
+    }
+
+    .btn {
+      margin-top: 20px;
+      padding: 12px 35px;
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 16px;
+      background: linear-gradient(45deg, #ff007f, #ff758c);
+      color: white;
+      box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+      transition: transform 0.1s, filter 0.2s;
+      display: inline-block;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn:hover { filter: brightness(1.15); }
+    .btn:active { transform: scale(0.97); }
+  </style>
+</head>
+<body>
+
+  <h1>SETTING</h1>
+
+  <div class="setting-container">
+    <div class="setting-item">
+      <span class="setting-label">BGM 音楽</span>
+      <button id="toggle-bgm-btn" class="audio-toggle-btn">BGM: 再生中</button>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="volume-slider">BGM 音量: <span id="volume-val">50%</span></label>
+      <input type="range" id="volume-slider" min="0" max="100" value="50">
+    </div>
+
+    <div class="setting-item">
+      <span class="setting-label">効果音 (SE)</span>
+      <button id="toggle-se-btn" class="audio-toggle-btn">効果音: OFF</button>
+    </div>
+
+    <div class="setting-item">
+      <label class="setting-label" for="se-volume-slider">効果音 音量: <span id="se-volume-val">50%</span></label>
+      <input type="range" id="se-volume-slider" min="0" max="100" value="50">
+    </div>
+  </div>
+
+  <a href="index.html" class="btn menu-btn">BACK</a>
+
+  <audio id="setting-bgm" src="title.mp3" loop></audio>
+  <audio id="nyu-sound" src="ニュッ1.mp3" preload="auto"></audio>
+
+  <script>
+    function adjustScale() {
+      const scale = Math.min(window.innerWidth / 400, window.innerHeight / 700);
+      document.body.style.transform = `scale(${scale > 1 ? 1 : scale})`;
+    }
+    window.addEventListener("load", adjustScale);
+    window.addEventListener("resize", adjustScale);
+
+    const volumeSlider = document.getElementById("volume-slider");
+    const volumeVal = document.getElementById("volume-val");
+    const seVolumeSlider = document.getElementById("se-volume-slider");
+    const seVolumeVal = document.getElementById("se-volume-val");
+    const toggleBgmBtn = document.getElementById("toggle-bgm-btn");
+    const toggleSeBtn = document.getElementById("toggle-se-btn");
+    const settingBgm = document.getElementById("setting-bgm");
+    const nyuSound = document.getElementById("nyu-sound");
+
+    const savedVolume = localStorage.getItem("drawRunBgmVolume");
+    const savedPlayState = localStorage.getItem("drawRunBgmPlaying");
+    const savedCurrentTime = localStorage.getItem("drawRunBgmCurrentTime");
+    
+    let savedSeState = localStorage.getItem("drawRunSeEnabled");
+    if (savedSeState === null) {
+      savedSeState = "false";
+      localStorage.setItem("drawRunSeEnabled", "false");
+    }
+    
+    const savedSeVolume = localStorage.getItem("drawRunSeVolume");
+
+    let isPlaying = (savedPlayState === "true");
+    let isSeEnabled = (savedSeState === "true");
+
+    if (savedVolume !== null) {
+      volumeSlider.value = savedVolume;
+      volumeVal.innerText = `${savedVolume}%`;
+      settingBgm.volume = savedVolume / 100;
+    } else {
+      settingBgm.volume = 0.5;
+    }
+
+    if (savedSeVolume !== null) {
+      seVolumeSlider.value = savedSeVolume;
+      seVolumeVal.innerText = `${savedSeVolume}%`;
+      nyuSound.volume = savedSeVolume / 100;
+    } else {
+      nyuSound.volume = 0.5;
+    }
+
+    if (savedCurrentTime !== null) {
+      settingBgm.currentTime = parseFloat(savedCurrentTime);
+    }
+
+    if (isPlaying) {
+      settingBgm.play().catch(() => {});
+      toggleBgmBtn.innerText = "BGM: 再生中";
+    } else {
+      settingBgm.pause();
+      toggleBgmBtn.innerText = "BGM: 停止中";
+    }
+
+    if (isSeEnabled) {
+      toggleSeBtn.innerText = "効果音: ON";
+    } else {
+      toggleSeBtn.innerText = "効果音: OFF";
+    }
+
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem("drawRunBgmCurrentTime", settingBgm.currentTime);
+    });
+
+    toggleBgmBtn.addEventListener("click", () => {
+      isPlaying = !isPlaying;
+      if (isPlaying) {
+        settingBgm.play();
+        toggleBgmBtn.innerText = "BGM: 再生中";
+      } else {
+        settingBgm.pause();
+        toggleBgmBtn.innerText = "BGM: 停止中";
+      }
+      localStorage.setItem("drawRunBgmPlaying", isPlaying);
+    });
+
+    volumeSlider.addEventListener("input", (e) => {
+      const vol = e.target.value;
+      volumeVal.innerText = `${vol}%`;
+      settingBgm.volume = vol / 100;
+      localStorage.setItem("drawRunBgmVolume", vol);
+    });
+
+    toggleSeBtn.addEventListener("click", () => {
+      isSeEnabled = !isSeEnabled;
+      if (isSeEnabled) {
+        toggleSeBtn.innerText = "効果音: ON";
+        if (nyuSound) {
+          nyuSound.currentTime = 0;
+          nyuSound.play().catch(() => {});
+        }
+      } else {
+        toggleSeBtn.innerText = "効果音: OFF";
+      }
+      localStorage.setItem("drawRunSeEnabled", isSeEnabled);
+    });
+
+    seVolumeSlider.addEventListener("input", (e) => {
+      const vol = e.target.value;
+      seVolumeVal.innerText = `${vol}%`;
+      nyuSound.volume = vol / 100;
+      localStorage.setItem("drawRunSeVolume", vol);
+    });
+
+    const menuButtons = document.querySelectorAll(".menu-btn");
+    menuButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const seEnabled = (localStorage.getItem("drawRunSeEnabled") === "true");
+        if (seEnabled && nyuSound) {
+          const savedSeVolume = localStorage.getItem("drawRunSeVolume");
+          nyuSound.volume = savedSeVolume !== null ? savedSeVolume / 100 : 0.5;
+          
+          nyuSound.currentTime = 0;
+          nyuSound.play().catch(err => console.log("SE再生エラー:", err));
+        }
+
+        if (btn.tagName === "A") {
+          e.preventDefault();
+          const targetUrl = btn.href;
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 200);
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>DRAW RUN</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background-color: #111;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    #game-container {
+      position: absolute;
+      width: 400px;
+      height: 700px;
+      transform-origin: center center;
+      overflow: hidden;
+    }
+
+    #gameCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    #fade-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: #000;
+      pointer-events: none;
+      z-index: 100;
+      clip-path: circle(0% at 50% 50%);
+      transition: clip-path 0.6s ease-in-out;
+    }
+
+    #fade-overlay.fade-in {
+      clip-path: circle(150% at 50% 50%);
+    }
+
+    #fade-overlay.circle-expand {
+      clip-path: circle(150% at 50% 50%);
+      transition: clip-path 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #gravity-warning {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 15px;
+      font-weight: bold;
+      color: #ff0080;
+      text-align: center;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.9);
+      pointer-events: none;
+      z-index: 5;
+      white-space: nowrap;
+      transition: opacity 0.1s;
+    }
+
+    #gravity-warning.hidden {
+      opacity: 0;
+    }
+
+    /* ▼ ゲーム画面側に移動したカウントダウン表示用要素 */
+    #countdown-display {
+      display: none;
+      position: absolute;
+      top: 45%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 75px;
+      font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 20px rgba(255, 0, 128, 0.9);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    #start-screen {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('start-bg.png');
+      background-size: 100% 100%;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-color: #000;
+      z-index: 10;
+      transition: opacity 0.5s ease;
+    }
+
+    #start-screen.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .menu-btn {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      background: none; 
+      border: none;       
+      cursor: pointer;
+      padding: 0;
+      transition: transform 0.1s, filter 0.2s;
+      text-decoration: none; 
+      display: block;
+    }
+
+    .menu-btn img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+    }
+
+    .menu-btn:hover {
+      transform: translate(-50%, -50%) scale(1.05);
+      filter: brightness(1.15);
+    }
+
+    .menu-btn:active {
+      transform: translate(-50%, -50%) scale(0.95);
+    }
+
+    /* ボタン配置 */
+    #start-button { top: 72%; left: 50%; width: 240px; height: 55px; }
+    #ranking-button { top: 84%; left: 30%; width: 90px; height: 90px; }
+    #custom-button { top: 84%; left: 50%; width: 90px; height: 90px; }
+    #howto-button { top: 84%; left: 70%; width: 90px; height: 90px; }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="countdown-display"></div>
+
+    <div id="fade-overlay"></div>
+
+    <div id="gravity-warning" class="hidden">
+      ⚠️ GRAVITY REVERSE! ⚠️
+    </div>
+
+    <div id="start-screen">
+      <button id="start-button" class="menu-btn"><img src="btn-start.png" alt="START"></button>
+      <a href="ranking.html" id="ranking-button" class="menu-btn"><img src="btn-ranking.png" alt="RANKING"></a>
+      <a href="custom.html" id="custom-button" class="menu-btn"><img src="btn-custom.png" alt="CUSTOM"></a>
+      <a href="howto.html" id="howto-button" class="menu-btn"><img src="btn-howto.png" alt="HOW TO"></a>
+    </div>
+  </div>
+
+  <script>
+    function adjustScale() {
+      const container = document.getElementById('game-container');
+      const canvas = document.getElementById('gameCanvas');
+      const designWidth = 400;  
+      const designHeight = 700; 
+      
+      canvas.width = designWidth;
+      canvas.height = designHeight;
+
+      const windowWidth = window.innerWidth;
+      const windowHeight = window.innerHeight;
+      
+      const scaleX = windowWidth / designWidth;
+      const scaleY = windowHeight / designHeight;
+      let scale = Math.min(scaleX, scaleY);
+      
+      if (scale >= 1) {
+        scale = 1;
+      }
+
+      container.style.left = "50%";
+      container.style.top = "50%";
+      container.style.transform = `translate(-50%, -50%) scale(${scale})`;
+    }
+
+    window.addEventListener("load", adjustScale);
+    window.addEventListener("resize", adjustScale);
+
+    const menuButtons = document.querySelectorAll(".menu-btn");
+    menuButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        if (btn.tagName === "A" || btn.href) {
+          e.preventDefault();
+          const targetUrl = btn.href;
+
+          const fadeOverlay = document.getElementById("fade-overlay");
+          if (fadeOverlay) {
+            fadeOverlay.classList.add("fade-out");
+          }
+
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 400);
+        }
+      });
+    });
+  </script>
+
+  <script src="game.js"></script>
+</body>
+</html>

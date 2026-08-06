@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>CUSTOM - DRAW RUN</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      background-size: cover;
+      color: white;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin-bottom: 25px;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
+    }
+
+    .custom-container {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 30px;
+      width: 80%;
+      max-width: 350px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      backdrop-filter: blur(4px);
+      text-align: center;
+    }
+
+    .character-preview {
+      width: 120px;
+      height: 120px;
+      margin: 0 auto 20px auto;
+      background: rgba(255, 255, 255, 0.9);
+      border: 2px solid #00ffcc;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 15px rgba(0, 255, 204, 0.4);
+    }
+
+    .character-preview img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+    }
+
+    .selector-area {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 15px;
+    }
+
+    .arrow-btn {
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-size: 20px;
+      width: 45px;
+      height: 45px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .arrow-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      transform: scale(1.05);
+    }
+
+    .arrow-btn:active {
+      transform: scale(0.95);
+    }
+
+    #skin-name {
+      font-size: 20px;
+      font-weight: bold;
+      color: #00ffcc;
+      text-shadow: 0 0 5px rgba(0, 255, 204, 0.5);
+    }
+
+    .save-msg {
+      font-size: 13px;
+      color: #aaa;
+      margin-top: 10px;
+    }
+
+    .back-btn {
+      margin-top: 30px;
+      padding: 12px 40px;
+      background: linear-gradient(45deg, #ff007f, #ff758c);
+      color: white;
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+      transition: transform 0.1s, box-shadow 0.2s;
+      border: none;
+      cursor: pointer;
+      display: inline-block;
+    }
+
+    .back-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 0, 127, 0.6);
+    }
+
+    .back-btn:active {
+      transform: translateY(1px);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>CHARACTER</h1>
+  
+  <div class="custom-container">
+    <div class="character-preview">
+      <img id="skin-img" src="player.png" alt="Character">
+    </div>
+
+    <div class="selector-area">
+      <button class="arrow-btn skin-btn" id="prev-skin">◀</button>
+      <div id="skin-name">棒人間</div>
+      <button class="arrow-btn skin-btn" id="next-skin">▶</button>
+    </div>
+
+    <div class="save-msg">※選択したスキンは自動で保存されます</div>
+  </div>
+
+  <a href="index.html" class="back-btn menu-btn">BACK</a>
+
+  <audio id="setting-bgm" src="title.mp3" loop></audio>
+  <audio id="nyu-sound" src="ニュッ1.mp3" preload="auto"></audio>
+
+  <script>
+    const settingBgm = document.getElementById("setting-bgm");
+    const nyuSound = document.getElementById("nyu-sound");
+
+    const savedVolume = localStorage.getItem("drawRunBgmVolume");
+    const savedPlayState = localStorage.getItem("drawRunBgmPlaying");
+    const savedCurrentTime = localStorage.getItem("drawRunBgmCurrentTime");
+    let isPlaying = savedPlayState !== "false";
+
+    if (savedVolume !== null) {
+      settingBgm.volume = savedVolume / 100;
+    } else {
+      settingBgm.volume = 0.5;
+    }
+
+    if (savedCurrentTime !== null) {
+      settingBgm.currentTime = parseFloat(savedCurrentTime);
+    }
+
+    if (isPlaying) {
+      settingBgm.play().catch(() => {});
+    } else {
+      settingBgm.pause();
+    }
+
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem("drawRunBgmCurrentTime", settingBgm.currentTime);
+    });
+
+    const characterList = [
+      { src: "player.png", name: "棒人間" },
+      { src: "player2.png", name: "格闘家" }, 
+      { src: "player3.png", name: "忍者" }    
+    ];
+
+    let currentSkinIndex = parseInt(localStorage.getItem('drawRunSkinIndex')) || 0;
+    if (currentSkinIndex < 0 || currentSkinIndex >= characterList.length) {
+      currentSkinIndex = 0;
+    }
+
+    const skinImg = document.getElementById("skin-img");
+    const skinNameDiv = document.getElementById("skin-name");
+
+    function updateDisplay() {
+      skinImg.src = characterList[currentSkinIndex].src;
+      skinNameDiv.innerText = characterList[currentSkinIndex].name;
+      localStorage.setItem('drawRunSkinIndex', currentSkinIndex);
+    }
+
+    updateDisplay();
+
+    // スキン切り替えボタンの処理
+    document.querySelectorAll(".skin-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        const seEnabled = (localStorage.getItem("drawRunSeEnabled") === "true");
+        if (seEnabled && nyuSound) {
+          const savedSeVolume = localStorage.getItem("drawRunSeVolume");
+          nyuSound.volume = savedSeVolume !== null ? savedSeVolume / 100 : 0.5;
+          nyuSound.currentTime = 0;
+          nyuSound.play().catch(() => {});
+        }
+
+        if (btn.id === "prev-skin") {
+          currentSkinIndex = (currentSkinIndex - 1 + characterList.length) % characterList.length;
+        } else if (btn.id === "next-skin") {
+          currentSkinIndex = (currentSkinIndex + 1) % characterList.length;
+        }
+        updateDisplay();
+      });
+    });
+
+    // 戻るボタン（メニューボタン）の共通処理
+    const menuButtons = document.querySelectorAll(".menu-btn");
+    menuButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const seEnabled = (localStorage.getItem("drawRunSeEnabled") === "true");
+        if (seEnabled && nyuSound) {
+          const savedSeVolume = localStorage.getItem("drawRunSeVolume");
+          nyuSound.volume = savedSeVolume !== null ? savedSeVolume / 100 : 0.5;
+          nyuSound.currentTime = 0;
+          nyuSound.play().catch(() => {});
+        }
+
+        if (btn.tagName === "A") {
+          e.preventDefault();
+          const targetUrl = btn.href;
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 200);
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

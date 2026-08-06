@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>HOW TO PLAY - DRAW RUN</title>
+  <style>
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+      color: white;
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+    }
+
+    body {
+      flex-direction: column;
+      transform-origin: center center;
+    }
+
+    h1 {
+      font-size: 32px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      margin-bottom: 15px;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
+    }
+
+    .howto-container {
+      background: rgba(0, 0, 0, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-radius: 20px;
+      padding: 15px 20px;
+      width: 85%;
+      max-width: 400px;
+      max-height: 55vh;
+      overflow-y: auto;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+      text-align: left;
+    }
+
+    .rule-section { margin-bottom: 15px; }
+    .rule-section h2 { font-size: 16px; color: #00ffcc; margin: 0 0 5px 0; }
+    .rule-section p { font-size: 13px; line-height: 1.5; margin: 0; color: #ddd; }
+
+    .back-btn {
+      margin-top: 20px;
+      padding: 12px 35px;
+      background: linear-gradient(45deg, #ff007f, #ff758c);
+      color: white;
+      text-decoration: none;
+      border-radius: 30px;
+      font-weight: bold;
+      font-size: 15px;
+      box-shadow: 0 4px 15px rgba(255, 0, 127, 0.4);
+      border: none;
+      cursor: pointer;
+      display: inline-block;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>HOW TO PLAY</h1>
+  
+  <div class="howto-container">
+    <div class="rule-section">
+      <h2>✏️ 線を描いて進もう</h2>
+      <p>画面をドラッグすると足場になる線を描けます。線を上手に使って障害物を乗り越えよう！</p>
+    </div>
+    <div class="rule-section">
+      <h2>⚠️ インクの制限</h2>
+      <p>線を描ける長さには制限があります。使い切ると少しの間クールダウンするので注意！</p>
+    </div>
+    <div class="rule-section">
+      <h2>🔄 重力反転ゾーン</h2>
+      <p>警告が出てくると重力が反転します！</p>
+    </div>
+    <div class="rule-section">
+      <h2>💀 障害物とゲームオーバー</h2>
+      <p>障害物にぶつかったり、落下するとゲームオーバーです。(※初見殺し要素あり)</p>
+    </div>
+  </div>
+
+  <a href="index.html" class="back-btn menu-btn">BACK</a>
+
+  <audio id="setting-bgm" src="title.mp3" loop></audio>
+  <audio id="nyu-sound" src="ニュッ1.mp3" preload="auto"></audio>
+
+  <script>
+    function adjustScale() {
+      const scale = Math.min(window.innerWidth / 400, window.innerHeight / 700);
+      document.body.style.transform = `scale(${scale > 1 ? 1 : scale})`;
+    }
+    window.addEventListener("load", adjustScale);
+    window.addEventListener("resize", adjustScale);
+
+    const settingBgm = document.getElementById("setting-bgm");
+    const nyuSound = document.getElementById("nyu-sound");
+
+    const savedVolume = localStorage.getItem("drawRunBgmVolume");
+    const savedPlayState = localStorage.getItem("drawRunBgmPlaying");
+    const savedCurrentTime = localStorage.getItem("drawRunBgmCurrentTime");
+    let isPlaying = savedPlayState !== "false";
+
+    if (savedVolume !== null) {
+      settingBgm.volume = savedVolume / 100;
+    } else {
+      settingBgm.volume = 0.5;
+    }
+
+    if (savedCurrentTime !== null) {
+      settingBgm.currentTime = parseFloat(savedCurrentTime);
+    }
+
+    if (isPlaying) {
+      settingBgm.play().catch(() => {});
+    } else {
+      settingBgm.pause();
+    }
+
+    window.addEventListener("beforeunload", () => {
+      localStorage.setItem("drawRunBgmCurrentTime", settingBgm.currentTime);
+    });
+
+    const menuButtons = document.querySelectorAll(".menu-btn");
+    menuButtons.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        const seEnabled = (localStorage.getItem("drawRunSeEnabled") === "true");
+        if (seEnabled && nyuSound) {
+          const savedSeVolume = localStorage.getItem("drawRunSeVolume");
+          nyuSound.volume = savedSeVolume !== null ? savedSeVolume / 100 : 0.5;
+          nyuSound.currentTime = 0;
+          nyuSound.play().catch(() => {});
+        }
+
+        if (btn.tagName === "A") {
+          e.preventDefault();
+          const targetUrl = btn.href;
+          setTimeout(() => {
+            window.location.href = targetUrl;
+          }, 200);
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>
